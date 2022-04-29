@@ -1,0 +1,9 @@
+.suggestions-stack-box{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.suggestions-stack-box > *{
+  margin: 2px;
+}
