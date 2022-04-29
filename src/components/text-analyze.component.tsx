@@ -1,49 +1,40 @@
 import React, { useContext, useEffect, useState } from "react";
 import { StateContext } from "../state";
-import { filter } from "rxjs";
+import { filter, Subscription } from "rxjs";
 import NothingFoundYetImage from "./nothing-found-yet.jpg"
 import { analyzeImageRequest, checkSpellingRequest } from "../helpers/helper"
+import { SpellCheckItem } from "../models/word-spelling.model";
+import { ImageAnalyzationResponseModel } from "../models/image-analysis.model";
 
 function TextAnalyzeComponent() {
 
     const { serviceInstance } = useContext(StateContext);
-    const [dataReady, setDataReady] = useState(false);
+    const [dataReady, setDataReady] = useState<boolean>(false);
     const [analyzing, setAnalyzing] = useState<string>('');
-    const [result, setResult] = useState([]);
+    const [result, setResult] = useState<SpellCheckItem[]>([]);
 
 
-    const handleNewData = (data: any) => {
+    const handleNewData = (data: Blob) => {
         analyzeImage(data);
         setDataReady(true);
     }
 
-    const analyzeImage = async (data: any) => {
+    const analyzeImage = async (data: Blob) => {
+        console.log(data);
         setAnalyzing('image');
         var file = new File([data], "image.png", { lastModified: new Date().getTime(), type: data.type });
-        const response = await analyzeImageRequest(file);
-        console.log(response);
-        const spelling = await checkSpellingRequest(response.text);
+        const response: ImageAnalyzationResponseModel = await analyzeImageRequest(file);
+        setAnalyzing('spelling');
+        const spelling: SpellCheckItem[] = await checkSpellingRequest(response.text);
         console.log(spelling);
-        /* const formData = new FormData();
-        formData.append('file', file)
-        const requestOptions = {
-            method: 'POST',
-            body: formData
-        };
-        console.log(process.env)
-        fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/analyze/image?format=array`, requestOptions)
-            .then(response => response.json())
-            .then(data => {
-                setResult(data.text);
-                console.log(data.text);
-                setAnalyzing('spelling');
-            }); */
+        setResult(spelling);
+        setAnalyzing('');
     }
 
 
     useEffect(() => {
-        const subscription = serviceInstance.getCroppedImage
-            .pipe(filter(x => !!x))
+        const subscription: Subscription = serviceInstance.getCroppedImage
+            .pipe(filter(x => !!x && x.size !== 0))
             .subscribe(handleNewData)
         return () => subscription.unsubscribe()
     }, [serviceInstance])
@@ -67,7 +58,7 @@ function TextAnalyzeComponent() {
                 {!analyzing && <div style={{ padding: "10px" }}>
                     <p style={{ textAlign: "left", fontWeight: "600" }}>Analyzed text:</p>
                     {result.map((line, i) =>
-                        <p key={i}>{line}</p>
+                        <p key={i}>{line.initial_word}</p>
                     )}
                 </div>}
             </div>}

@@ -1,5 +1,7 @@
+import { ImageAnalyzationResponseModel } from "../models/image-analysis.model";
+import { SpellCheckItem } from "../models/word-spelling.model";
 
-export const analyzeImageRequest = (file: File) => {
+export const analyzeImageRequest = (file: File) : Promise<ImageAnalyzationResponseModel> => {
     const formData = new FormData();
     formData.append('file', file)
     const requestOptions = {
@@ -11,10 +13,9 @@ export const analyzeImageRequest = (file: File) => {
         .catch(error => console.warn(error));
 }
 
-export const checkSpellingRequest = (value: string[]) => {
-    console.log(value)
+export const checkSpellingRequest = (value: string[]) : Promise<SpellCheckItem[]> => {
     const body = {
-        value: value
+        value
     }
     const requestOptions = {
         method: 'POST',

@@ -11,7 +11,7 @@ import ReadGeneLogo from "./dna.svg"
 function App() {
 
   const { serviceInstance } = useContext(StateContext)
-  const [editing, setEditing] = useState();
+  const [editing, setEditing] = useState<boolean>();
 
   useEffect(() => {
     const subscription = serviceInstance.getEditingImage.subscribe(setEditing)

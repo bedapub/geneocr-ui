@@ -2,17 +2,17 @@ import { BehaviorSubject } from 'rxjs';
 
 const CreateImageService = () => {
 
-    const editingImage: BehaviorSubject<any> = new BehaviorSubject(true);
+    const editingImage: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(true);
 
-    const rawImage: BehaviorSubject<any> = new BehaviorSubject(null);
+    const rawImage: BehaviorSubject<string> = new BehaviorSubject('');
 
-    const croppedImage: BehaviorSubject<any> = new BehaviorSubject(null);
+    const croppedImage: BehaviorSubject<Blob> = new BehaviorSubject<Blob>(new Blob());
 
-    const setRawImage = (image: any) => {
+    const setRawImage = (image: string) => {
         rawImage.next(image);
     }
 
-    const setCroppedImage = (image: any) => {
+    const setCroppedImage = (image: Blob) => {
         croppedImage.next(image);
     }
 
