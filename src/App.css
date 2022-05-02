@@ -15,3 +15,7 @@
 .valid-name-input-field p {
     color: #279f37;
 }
+
+p {
+    margin: 0;
+}

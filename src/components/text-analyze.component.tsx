@@ -20,8 +20,9 @@ import TextField from "@mui/material/TextField";
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
 import { downloadDataAsTxt, downloadDataAsJson } from "../helpers/download-data";
+import Checkbox from '@mui/material/Checkbox';
 
 function TextAnalyzeComponent() {
   const { serviceInstance } = useContext(StateContext);
@@ -29,6 +30,7 @@ function TextAnalyzeComponent() {
   const [analyzing, setAnalyzing] = useState<string>('');
   const [result, setResult] = useState<SpellCheckItemView[]>([]);
   const [fileType, setFileType] = useState<string>('txt');
+  const [useInvalidGenes, setUseInvalidGenes] = useState<boolean>(true);
 
   const handleNewData = (data: Blob) => {
     analyzeImage(data);
@@ -55,7 +57,8 @@ function TextAnalyzeComponent() {
         gene_exists: x.gene_exists,
         best_canditate: x.best_canditate,
         final_word: x.initial_word,
-        helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!'
+        helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!',
+        use_for_download: true
       };
     });
     setResult(formattedSpelling);
@@ -82,11 +85,19 @@ function TextAnalyzeComponent() {
 
   const downLoadData = () => {
     if (fileType === 'txt') {
-      downloadDataAsTxt(result);
+      downloadDataAsTxt(result, useInvalidGenes);
     } else if (fileType === 'json') {
-      downloadDataAsJson(result);
+      downloadDataAsJson(result, useInvalidGenes);
     }
+    console.error('File format not found')
   }
+
+  const changeDownload = (event: any, index: number) => {
+    let copyResult = [...result];
+    copyResult[index].use_for_download = event.target.checked;
+    setResult(copyResult);
+  }
+
 
   useEffect(() => {
     const subscription: Subscription = serviceInstance.getCroppedImage
@@ -133,6 +144,7 @@ function TextAnalyzeComponent() {
                     <TableRow>
                       <TableCell>Analyzed word</TableCell>
                       <TableCell>suggestions</TableCell>
+                      <TableCell>Use in download</TableCell>
                       <TableCell>final name</TableCell>
                     </TableRow>
                   </TableHead>
@@ -190,6 +202,10 @@ function TextAnalyzeComponent() {
                           )}
                         </TableCell>
                         <TableCell align="right">
+                          <Checkbox checked={line.use_for_download}
+                            onChange={(e) => changeDownload(e, i)} />
+                        </TableCell>
+                        <TableCell align="right">
                           <TextField
                             id="outlined-size-small"
                             value={line.final_word}
@@ -209,6 +225,11 @@ function TextAnalyzeComponent() {
                 </Table>
               </TableContainer>
               <div className="mt-3 flex flex-row justify-end content-end">
+                <div className="ml-3 flex flex-row mb-2 items-center">
+                  <Checkbox checked={useInvalidGenes}
+                    onChange={(e) => setUseInvalidGenes(e.target.checked)} />
+                  <p>Include invalid genes in download</p>
+                </div>
                 <div>
                   <FormControl sx={{ m: 1, minWidth: 140, whiteSpace: "nowrap" }} size="small">
                     <InputLabel id="select-label-file-type">File type</InputLabel>
@@ -230,16 +251,19 @@ function TextAnalyzeComponent() {
             </div>
           )}
         </div>
-      )}
-      {!dataReady && (
-        <div>
-          <div className="flex flex-col items-center">
-            <img src={NothingFoundYetImage} className="w-36" />
-            <p>Nothing analyzed yet, please start analyzation!</p>
+      )
+      }
+      {
+        !dataReady && (
+          <div>
+            <div className="flex flex-col items-center">
+              <img src={NothingFoundYetImage} className="w-36" />
+              <p>Nothing analyzed yet, please start analyzation!</p>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 

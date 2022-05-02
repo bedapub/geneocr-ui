@@ -1,9 +1,13 @@
 import { SpellCheckItemView } from "../models/word-spelling.model";
 
-export const downloadDataAsTxt = (data: SpellCheckItemView[]): void => {
+export const downloadDataAsTxt = (data: SpellCheckItemView[], invalidGenes: boolean): void => {
     let downloadString: string = '';
     data.forEach(x => {
-        downloadString += `${x.final_word}\n`
+        if (x.gene_exists) {
+            downloadString += `${x.final_word}\n`
+        } else if (invalidGenes && x.use_for_download){
+            downloadString += `${x.final_word}\n`
+        }
     })
     const element = document.createElement("a");
     const file = new Blob([downloadString], {
@@ -15,7 +19,9 @@ export const downloadDataAsTxt = (data: SpellCheckItemView[]): void => {
     element.click();
 }
 
-export const downloadDataAsJson = (data: SpellCheckItemView[]): void => {
+export const downloadDataAsJson = (data: SpellCheckItemView[], invalidGenes: boolean): void => {
+    data = data.filter(x => x.gene_exists || (!x.gene_exists && invalidGenes && x.use_for_download));
+    
     const toBeDownloadedData = data.map(x => {
         return { gene_name: x.final_word };
     })
