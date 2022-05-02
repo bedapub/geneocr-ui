@@ -26,3 +26,13 @@ export const checkSpellingRequest = (value: string[]) : Promise<SpellCheckItem[]
         .then(response => response.json())
         .catch(error => console.warn(error));
 }
+
+export const wordValidationRequest = (value: string) : Promise<any> => {
+    const requestOptions = {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    };
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/check?word=${value}&type=gene`, requestOptions)
+        .then(response => response.json())
+        .catch(error => console.warn(error));
+}

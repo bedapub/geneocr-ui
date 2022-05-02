@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { StateContext } from "../state";
 import { filter, Subscription } from "rxjs";
 import NothingFoundYetImage from "./nothing-found-yet.jpg";
-import { analyzeImageRequest, checkSpellingRequest } from "../helpers/helper";
+import { analyzeImageRequest, checkSpellingRequest, wordValidationRequest } from "../helpers/helper";
 import {
   SpellCheckItem,
   SpellCheckItemView,
@@ -17,12 +17,18 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Chip from "@mui/material/Chip";
 import TextField from "@mui/material/TextField";
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import { downloadDataAsTxt, downloadDataAsJson } from "../helpers/download-data";
 
 function TextAnalyzeComponent() {
   const { serviceInstance } = useContext(StateContext);
   const [dataReady, setDataReady] = useState<boolean>(false);
-  const [analyzing, setAnalyzing] = useState<string>("");
+  const [analyzing, setAnalyzing] = useState<string>('');
   const [result, setResult] = useState<SpellCheckItemView[]>([]);
+  const [fileType, setFileType] = useState<string>('txt');
 
   const handleNewData = (data: Blob) => {
     analyzeImage(data);
@@ -49,6 +55,7 @@ function TextAnalyzeComponent() {
         gene_exists: x.gene_exists,
         best_canditate: x.best_canditate,
         final_word: x.initial_word,
+        helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!'
       };
     });
     setResult(formattedSpelling);
@@ -60,6 +67,26 @@ function TextAnalyzeComponent() {
     copyResult[index].final_word = word;
     setResult(copyResult);
   };
+
+  const checkWord = async (word: string, index: number) => {
+    let copyResult = [...result];
+    copyResult[index].gene_exists = true;
+    copyResult[index].helper_text = 'Checking gene...';
+    setResult(copyResult);
+    const response = await wordValidationRequest(word);
+    copyResult = [...result];
+    copyResult[index].gene_exists = response.valid;
+    copyResult[index].helper_text = response.valid ? 'Gene is valid' : 'Invalid gene name!';
+    setResult(copyResult);
+  }
+
+  const downLoadData = () => {
+    if (fileType === 'txt') {
+      downloadDataAsTxt(result);
+    } else if (fileType === 'json') {
+      downloadDataAsJson(result);
+    }
+  }
 
   useEffect(() => {
     const subscription: Subscription = serviceInstance.getCroppedImage
@@ -100,7 +127,7 @@ function TextAnalyzeComponent() {
           )}
           {!analyzing && (
             <div style={{ padding: "10px" }}>
-              <TableContainer component={Paper}>
+              <TableContainer component={Paper} className="overflow-y-auto max-h-176">
                 <Table aria-label="simple table">
                   <TableHead>
                     <TableRow>
@@ -135,27 +162,26 @@ function TextAnalyzeComponent() {
                                       label={x}
                                       size="small"
                                       variant="outlined"
-                                      onClick={(e) =>
+                                      onClick={(e) => {
                                         changeFinalWord(
                                           (e as any).target.innerText,
                                           i
-                                        )
-                                      }
+                                        ); checkWord((e as any).target.innerText, i)
+                                      }}
                                     />
                                   );
                                 } else {
                                   return (
                                     <Chip
                                       key={key}
-
                                       label={x}
                                       size="small"
-                                      onClick={(e) =>
+                                      onClick={(e) => {
                                         changeFinalWord(
                                           (e as any).target.innerText,
                                           i
-                                        )
-                                      }
+                                        ); checkWord((e as any).target.innerText, i)
+                                      }}
                                     />
                                   );
                                 }
@@ -169,6 +195,12 @@ function TextAnalyzeComponent() {
                             value={line.final_word}
                             size="small"
                             onChange={(e) => changeFinalWord(e.target.value, i)}
+                            onBlur={(e) => checkWord(e.target.value, i)}
+                            helperText={line.helper_text}
+                            error={!line.gene_exists}
+                            fullWidth
+                            style={{ minWidth: 170, }}
+                            className={line.gene_exists && line.helper_text === 'Gene is valid' ? "valid-name-input-field" : "none"}
                           />
                         </TableCell>
                       </TableRow>
@@ -176,6 +208,25 @@ function TextAnalyzeComponent() {
                   </TableBody>
                 </Table>
               </TableContainer>
+              <div className="mt-3 flex flex-row justify-end content-end">
+                <div>
+                  <FormControl sx={{ m: 1, minWidth: 140, whiteSpace: "nowrap" }} size="small">
+                    <InputLabel id="select-label-file-type">File type</InputLabel>
+                    <Select
+                      value={fileType}
+                      onChange={(e) => setFileType(e.target.value)}
+                      labelId="select-label-file-type"
+                      label="File type"
+                    >
+                      <MenuItem value="txt">TXT</MenuItem>
+                      <MenuItem value="json">JSON</MenuItem>
+                    </Select>
+                  </FormControl>
+                </div>
+                <div className="ml-3 flex flex-col-reverse mb-2">
+                  <button type="button" onClick={downLoadData} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Download</button>
+                </div>
+              </div>
             </div>
           )}
         </div>

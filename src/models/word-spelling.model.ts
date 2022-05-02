@@ -8,4 +8,5 @@ export interface SpellCheckItem {
 
 export interface SpellCheckItemView extends SpellCheckItem {
     final_word: string;
+    helper_text: string;
 }

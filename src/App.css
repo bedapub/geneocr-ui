@@ -1,9 +1,17 @@
-.suggestions-stack-box{
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+.suggestions-stack-box {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
 }
 
-.suggestions-stack-box > *{
-  margin: 2px;
+.suggestions-stack-box>* {
+    margin: 2px;
+}
+
+.valid-name-input-field fieldset {
+    border-color: #279f37;
+}
+
+.valid-name-input-field p {
+    color: #279f37;
 }
