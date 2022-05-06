@@ -19,3 +19,16 @@
 p {
     margin: 0;
 }
+
+.collapsed-area-app {
+    width: 0px;
+}
+
+.expanded-area-app {
+    width: 100%;
+}
+
+.area-app {
+    -webkit-transition: width 1s;
+    transition: width 1s;
+}

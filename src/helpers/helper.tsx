@@ -8,7 +8,7 @@ export const analyzeImageRequest = (file: File) : Promise<ImageAnalyzationRespon
         method: 'POST',
         body: formData
     };
-    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/analyze/image?format=array`, requestOptions)
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/analyze/image?response_format=array`, requestOptions)
         .then(response => response.json())
         .catch(error => console.warn(error));
 }
@@ -34,5 +34,17 @@ export const wordValidationRequest = (value: string) : Promise<any> => {
     };
     return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/check?word=${value}&type=gene`, requestOptions)
         .then(response => response.json())
+        .catch(error => console.warn(error));
+}
+
+export const sharpenImageRequest = (file: File) : Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file)
+    const requestOptions = {
+        method: 'POST',
+        body: formData
+    };
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/image-helper/sharpen`, requestOptions)
+        .then(response => response.blob())
         .catch(error => console.warn(error));
 }

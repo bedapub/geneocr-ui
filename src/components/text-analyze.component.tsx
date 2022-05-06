@@ -23,6 +23,8 @@ import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { downloadDataAsTxt, downloadDataAsJson } from "../helpers/download-data";
 import Checkbox from '@mui/material/Checkbox';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert, { AlertProps } from '@mui/material/Alert';
 
 function TextAnalyzeComponent() {
   const { serviceInstance } = useContext(StateContext);
@@ -31,6 +33,7 @@ function TextAnalyzeComponent() {
   const [result, setResult] = useState<SpellCheckItemView[]>([]);
   const [fileType, setFileType] = useState<string>('txt');
   const [useInvalidGenes, setUseInvalidGenes] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<boolean>(false);
 
   const handleNewData = (data: Blob) => {
     analyzeImage(data);
@@ -50,19 +53,26 @@ function TextAnalyzeComponent() {
     const spelling: SpellCheckItem[] = await checkSpellingRequest(
       response.text
     );
-    const formattedSpelling: SpellCheckItemView[] = spelling.map((x) => {
-      return {
-        suggestions: x.suggestions,
-        initial_word: x.initial_word,
-        gene_exists: x.gene_exists,
-        best_canditate: x.best_canditate,
-        final_word: x.initial_word,
-        helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!',
-        use_for_download: true
-      };
-    });
-    setResult(formattedSpelling);
-    setAnalyzing("");
+    if (response.status == "success") {
+      const formattedSpelling: SpellCheckItemView[] = spelling.map((x) => {
+        return {
+          suggestions: x.suggestions,
+          initial_word: x.initial_word,
+          gene_exists: x.gene_exists,
+          best_canditate: x.best_canditate,
+          final_word: x.initial_word,
+          helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!',
+          use_for_download: true
+        };
+      });
+      setResult(formattedSpelling);
+      setAnalyzing("");
+    } else {
+      setErrorMessage(true);
+      setAnalyzing("");
+      setDataReady(false);
+      console.error('Failed to read from image!');
+    }
   };
 
   const changeFinalWord = (word: string, index: number) => {
@@ -108,6 +118,11 @@ function TextAnalyzeComponent() {
 
   return (
     <div className="mt-5">
+      <div>
+        <Snackbar open={errorMessage} autoHideDuration={6000} onClose={(_) => setErrorMessage(false)}>
+          <Alert  onClose={(_) => setErrorMessage(false)} severity="error"  sx={{ width: '100%' }}>Failed to analyze text from image, sharpen it and then try again!</Alert>
+        </Snackbar>
+      </div>
       {dataReady && (
         <div>
           {analyzing && (
@@ -268,3 +283,10 @@ function TextAnalyzeComponent() {
 }
 
 export default TextAnalyzeComponent;
+
+const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
+  props,
+  ref,
+) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
