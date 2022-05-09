@@ -1,9 +1,6 @@
 import React, { useState, useContext, useEffect, useRef } from "react";
 import { StateContext } from "../state";
 import Cropper from "react-cropper";
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
-import { sharpenImageRequest } from "../helpers/helper";
 import { CroppedImageModel } from './../models/cropped-images.model';
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -19,6 +16,7 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
+import NothingCropppedYet from "./crop-imagesplitter.png";
 
 enum State {
   CROPPING,
@@ -31,8 +29,7 @@ function FileCropComponent() {
   const [raw, setRaw] = useState<string>();
   const [cropper, setCropper] = useState<Cropper>();
   const [croppedImage, setCroppedImage] = useState<string>();
-  const [state, setState] = useState<State>(State.CROPPING)
-  const [blob, setBlob] = useState<Blob>(new Blob());
+  const [state, setState] = useState<State>(State.CROPPING);
   const [croppedImages, setCroppedImages] = useState<CroppedImageModel[]>([])
   const [isSharpening, setIsSharpening] = useState<boolean>(false);
   const reference = useRef<boolean>();
@@ -52,14 +49,12 @@ function FileCropComponent() {
             blob: blobValue,
             title: `crop ${copyCroppedImages.length + 1}`,
             type: 'gene',
-            dataUrl: img
+            dataUrl: img,
+            status: 'cropped'
           });
           setCroppedImages(copyCroppedImages);
         }
       });
-
-      //setCroppedImage(img);
-      //setState(State.SHARPENING);
     } else {
       console.error("Cropper is not defined!");
     }
@@ -67,35 +62,42 @@ function FileCropComponent() {
 
   const startAnalysis = () => {
     setState(State.CROPPED);
-    serviceInstance.setCroppedImages(croppedImages)
+    serviceInstance.setCroppedImages(croppedImages);
+    serviceInstance.setAreaSetting('analyzing');
   }
 
-/*   const setSharpening = async (value: boolean) => {
-    if (!value) {
-      console.log(blob);
-      serviceInstance.setCroppedImage(blob);
-      setState(State.CROPPED);
-      setIsSharpening(false);
-    } else {
-      setIsSharpening(true);
-      var file = new File([blob], "image.png", {
-        lastModified: new Date().getTime(),
-        type: blob.type,
-      });
-      const image = await sharpenImageRequest(file);
-      if (reference.current) {
-        serviceInstance.setCroppedImage(image);
+  /*   const setSharpening = async (value: boolean) => {
+      if (!value) {
+        console.log(blob);
+        serviceInstance.setCroppedImage(blob);
         setState(State.CROPPED);
-        const imageObjectURL = URL.createObjectURL(image);
-        setCroppedImage(imageObjectURL);
         setIsSharpening(false);
+      } else {
+        setIsSharpening(true);
+        var file = new File([blob], "image.png", {
+          lastModified: new Date().getTime(),
+          type: blob.type,
+        });
+        const image = await sharpenImageRequest(file);
+        if (reference.current) {
+          serviceInstance.setCroppedImage(image);
+          setState(State.CROPPED);
+          const imageObjectURL = URL.createObjectURL(image);
+          setCroppedImage(imageObjectURL);
+          setIsSharpening(false);
+        }
       }
-    }
-  } */
+    } */
 
-  const changeCroppedImageAttribute = (attribute: 'title'|'type', value: string, index: number) => {
+  const changeCroppedImageAttribute = (attribute: 'title' | 'type', value: string, index: number) => {
     const copyCroppedImages = [...croppedImages];
     copyCroppedImages[index][attribute] = value;
+    setCroppedImages(copyCroppedImages);
+  }
+
+  const deleteCroppedImage = (index: number) => {
+    const copyCroppedImages = [...croppedImages];
+    copyCroppedImages.splice(index, 1);
     setCroppedImages(copyCroppedImages);
   }
 
@@ -113,21 +115,21 @@ function FileCropComponent() {
     <div className="mt-5">
       {raw && (
         <div>
-            <div style={{ display: "flex", flexDirection: "column" }} >
-              <div className="flex flex-row">
-                <div>
-                  <p>Image</p>
-                  <Cropper style={{ width: "50vw", height: "100%", maxHeight: "50vh", maxWidth: "50vw" }} zoomTo={0.5} initialAspectRatio={1}
-                    src={raw} viewMode={1} minCropBoxHeight={10} minCropBoxWidth={10}
-                    background={false} responsive={true} autoCropArea={1} checkOrientation={false}
-                    onInitialized={(instance) => setCropper(instance)} guides={true} />
-                  <button onClick={handleImageCrop} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Crop image</button>
+          <div style={{ display: "flex", flexDirection: "column" }} >
+            <div className="flex flex-row">
+              <div>
+                <Cropper style={{ width: "50vw", height: "100%", maxHeight: "50vh", maxWidth: "50vw" }} zoomTo={0.5} initialAspectRatio={1}
+                  src={raw} viewMode={1} minCropBoxHeight={10} minCropBoxWidth={10}
+                  background={false} responsive={true} autoCropArea={1} checkOrientation={false}
+                  onInitialized={(instance) => setCropper(instance)} guides={true} />
+                <div className="mt-3 flex flex-row-reverse">
+                <button onClick={handleImageCrop} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Crop image</button>
                 </div>
-                <div className="ml-3">
-                  <p>Cropped images</p>
-                  <div>
-
-                    <TableContainer component={Paper} className="overflow-y-auto max-h-176">
+              </div>
+              <div className="ml-3 w-full">
+                <div>
+                  {croppedImages.length !== 0 && (
+                    <TableContainer component={Paper} className="overflow-y-auto" style={{ maxHeight: '500px' }}>
                       <Table sx={{ width: '100%' }} aria-label="simple table">
                         <TableHead>
                           <TableRow>
@@ -168,12 +170,13 @@ function FileCropComponent() {
                                     label="Type"
                                   >
                                     <MenuItem value="gene">Gene</MenuItem>
-                                    <MenuItem value="test">Test</MenuItem>
+                                    <MenuItem value="cell">Cell</MenuItem>
+                                    <MenuItem value="ensbl">ENSBL</MenuItem>
                                   </Select>
                                 </FormControl>
                               </TableCell>
                               <TableCell align="right">
-                                <IconButton aria-label="delete" size="large">
+                                <IconButton onClick={() => {deleteCroppedImage(i)}} aria-label="delete" size="large">
                                   <DeleteIcon />
                                 </IconButton>
                               </TableCell>
@@ -182,15 +185,22 @@ function FileCropComponent() {
                         </TableBody>
                       </Table>
                     </TableContainer>
-                  </div>
+                  )}
+                  {croppedImages.length === 0 && (
+                    <div className="w-full flex flex-col items-center mt-6">
+                      <img src={NothingCropppedYet} className="w-36" />
+                      <p>No image cropped yet, crop your first image!</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="mt-5 w-full flex justify-end">
-                <button type="button" onClick={startAnalysis} disabled={croppedImages.length === 0} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
-                  {state === State.CROPPING ? 'Start analysis' : 'Start analysis again'}
-                </button>
-              </div>
             </div>
+            <div className="mt-5 w-full flex justify-end">
+              <button type="button" onClick={startAnalysis} disabled={croppedImages.length === 0} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
+                {state === State.CROPPING ? 'Start analysis' : 'Start analysis again'}
+              </button>
+            </div>
+          </div>
           {/* {state === State.SHARPENING && (
             <div>
               <p className="font-bold">Important</p>

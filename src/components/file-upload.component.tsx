@@ -18,7 +18,6 @@ function FileUploadComponent() {
     if (preview) {
       serviceInstance.setRawImage(preview);
       serviceInstance.setEditingImage(false);
-      serviceInstance.setViewFocus('editing');
     }
   };
 

@@ -4,4 +4,5 @@ export interface CroppedImageModel {
     title: string;
     type: string;
     dataUrl: string;
+    status: 'cropped' | 'analyzing' | 'wordspelling' | 'analyzed';
 }

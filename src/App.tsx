@@ -1,14 +1,11 @@
-
+import React from "react";
 import './App.css';
 import FileCropComponent from './components/file-crop.component';
 import FileUploadComponent from './components/file-upload.component';
 import TextAnalyzeComponent from './components/text-analyze.component';
 import { StateContext } from "./state";
 import { useContext, useEffect, useState } from "react";
-import ReadGeneLogo from "./dna.svg"
-import { IconButton, Tooltip } from '@mui/material';
-import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
+import ReadGeneLogo from "./dna.svg";
 
 enum AreaSetting {
   DEFAULT,
@@ -17,33 +14,14 @@ enum AreaSetting {
 
 function App() {
 
-  const { serviceInstance } = useContext(StateContext)
+  const { serviceInstance } = useContext(StateContext);
   const [editing, setEditing] = useState<boolean>();
-  const [areaSettings, setAreaSettings] = useState<any>({
-    editing: AreaSetting.DEFAULT,
-    analyzing: AreaSetting.DEFAULT
-  });
-
-  const changeAreaSetting = (area: string, setting: AreaSetting) => {
-    const copyAreaSettings = Object.assign({}, areaSettings);
-    copyAreaSettings[area] = setting;
-    setAreaSettings(copyAreaSettings);
-  }
-
-  const setViewFocus = (view: string) => {
-    if (view === 'normal') {
-      changeAreaSetting('editing', AreaSetting.DEFAULT);
-    } else if (view === 'editing') {
-      changeAreaSetting('editing', AreaSetting.EXPANDED);
-    } else if (view === 'analyzing') {
-      changeAreaSetting('analyzing', AreaSetting.EXPANDED);
-    }
-  }
+  const [areaSettings, setAreaSettings] = useState<'editing' | 'analyzing'>('editing');
 
   useEffect(() => {
     const subscriptionEditing = serviceInstance.getEditingImage.subscribe(setEditing);
-    const subscriptionViewFocus = serviceInstance.getViewFocus.subscribe(setViewFocus)
-    return () => { subscriptionEditing.unsubscribe(); subscriptionViewFocus.unsubscribe(); }
+    const subscriptionAreaSetting = serviceInstance.getAreaSetting.subscribe(setAreaSettings);
+    return () => { subscriptionEditing.unsubscribe(); subscriptionAreaSetting.unsubscribe(); }
   }, [serviceInstance])
 
   return (
@@ -55,66 +33,27 @@ function App() {
               <img src={ReadGeneLogo} className="mr-4 h-6 sm:h-9" alt="GeneOCR Logo" />
               <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">GeneOCR</span>
             </div>
-
           </div>
         </nav>
       </div>
       <div className="px-2.5 flex flex-row">
-        <div className={`${areaSettings.analyzing === AreaSetting.DEFAULT ? areaSettings.editing === AreaSetting.EXPANDED ? 'expanded-area-app' : 'w-1/2' : 'collapsed-area-app'} px-2.5 area-app`}>
+        <div className={`px-2.5 w-full`}>
           <div className="p-6 w-full bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
-            <div className={`text-xl font-medium flex flex-row justify-between ${areaSettings.analyzing === AreaSetting.DEFAULT ? 'visible' : 'invisible'}`}>
-              <div>
-                Uploading & editing
-              </div>
-              <div>
-                {areaSettings.editing === AreaSetting.DEFAULT && (
-                  <Tooltip title="Expand area">
-                    <IconButton onClick={(_) => changeAreaSetting('editing', AreaSetting.EXPANDED)} aria-label="openfull"
-                      disabled={areaSettings.analyzing === AreaSetting.EXPANDED}>
-                      <OpenInFullIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {areaSettings.editing === AreaSetting.EXPANDED && (
-                  <Tooltip title="Collapse area">
-                    <IconButton onClick={(_) => changeAreaSetting('editing', AreaSetting.DEFAULT)} aria-label="opendefault">
-                      <CloseFullscreenIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </div>
+            <div className={`text-xl font-medium flex flex-row justify-between border-gray-200 border-solid border rounded-md`}>
+              <ul className="hidden w-full text-sm font-medium text-center text-gray-500 rounded-lg divide-x divide-gray-200 shadow sm:flex dark:divide-gray-700 dark:text-gray-400">
+                <li className="w-full">
+                  <button onClick={() => setAreaSettings('editing')} className={`inline-block p-4 w-full focus:ring-4 focus:ring-blue-300 focus:outline-none ${areaSettings === 'analyzing' ? 'bg-white hover:text-gray-700 hover:bg-gray-50 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700': 'text-gray-900 bg-gray-100 rounded-l-lg active dark:bg-gray-700 dark:text-white'}`}>Upload & editing</button>
+                </li>
+                <li className="w-full">
+                  <button onClick={() => setAreaSettings('analyzing')} className={`inline-block p-4 w-full focus:ring-4 focus:ring-blue-300 focus:outline-none ${areaSettings === 'analyzing' ? 'text-gray-900 bg-gray-100 rounded-r-lg  active  dark:bg-gray-700 dark:text-white': 'bg-white hover:text-gray-700 hover:bg-gray-50 dark:hover:text-white dark:bg-gray-800 dark:hover:bg-gray-700'}`}>Analysis</button>
+                </li>
+              </ul>
             </div>
-            <div className={`mt-2.5 ${areaSettings.analyzing === AreaSetting.DEFAULT ? 'visible' : 'invisible'}`}>
+            <div className={`mt-2.5 ${areaSettings !== 'editing' ? 'hidden-element' : undefined}`}>
               {editing && <FileUploadComponent />}
               {!editing && <FileCropComponent />}
             </div>
-          </div>
-        </div>
-        <div className={`${areaSettings.editing === AreaSetting.DEFAULT ? areaSettings.analyzing === AreaSetting.EXPANDED ? 'expanded-area-app' : 'w-1/2' : 'collapsed-area-app'} px-2.5 area-app`}>
-          <div className="p-6 w-full bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
-            <div className={`text-xl font-medium flex flex-row justify-between ${areaSettings.editing === AreaSetting.DEFAULT ? 'visible' : 'invisible'}`}>
-              <div>
-                Analyzing
-              </div>
-              <div>
-                {areaSettings.analyzing === AreaSetting.DEFAULT && (
-                  <Tooltip title="Expand area">
-                    <IconButton onClick={(_) => changeAreaSetting('analyzing', AreaSetting.EXPANDED)} aria-label="openfull"
-                      disabled={areaSettings.editing === AreaSetting.EXPANDED}>
-                      <OpenInFullIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-                {areaSettings.analyzing === AreaSetting.EXPANDED && (
-                  <Tooltip title="Collapse area">
-                    <IconButton onClick={(_) => changeAreaSetting('analyzing', AreaSetting.DEFAULT)} aria-label="opendefault">
-                      <CloseFullscreenIcon />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </div>
-            </div>
-            <div className={`mt-2.5 ${areaSettings.editing === AreaSetting.DEFAULT ? 'visible' : 'invisible'}`}>
+            <div className={`mt-2.5 ${areaSettings !== 'analyzing' ? 'hidden-element' : undefined}`}>
               <TextAnalyzeComponent />
             </div>
           </div>
@@ -123,5 +62,7 @@ function App() {
     </div>
   );
 }
+
+
 
 export default App;

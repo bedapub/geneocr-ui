@@ -1,14 +1,20 @@
 import { SpellCheckItemView } from "../models/word-spelling.model";
+import { AnalysisImageModel } from './../models/analyzing-image.model';
 
-export const downloadDataAsTxt = (data: SpellCheckItemView[], invalidGenes: boolean): void => {
+export const downloadDataAsTxt = (data: AnalysisImageModel[], invalidGenes: boolean): void => {
     let downloadString: string = '';
-    data.forEach(x => {
-        if (x.gene_exists) {
-            downloadString += `${x.final_word}\n`
-        } else if (invalidGenes && x.use_for_download){
-            downloadString += `${x.final_word}\n`
+    data.forEach(image => {
+        if (image.spellResult.length > 0) {
+            downloadString += `\n\n---${image.image.type}---\n\n`;
         }
-    })
+        image.spellResult.forEach(x => {
+            if (x.gene_exists) {
+                downloadString += `${x.final_word}\n`
+            } else if (invalidGenes && x.use_for_download) {
+                downloadString += `${x.final_word}\n`
+            }
+        });
+    });
     const element = document.createElement("a");
     const file = new Blob([downloadString], {
         type: "text/plain"
@@ -19,12 +25,24 @@ export const downloadDataAsTxt = (data: SpellCheckItemView[], invalidGenes: bool
     element.click();
 }
 
-export const downloadDataAsJson = (data: SpellCheckItemView[], invalidGenes: boolean): void => {
-    data = data.filter(x => x.gene_exists || (!x.gene_exists && invalidGenes && x.use_for_download));
-    
-    const toBeDownloadedData = data.map(x => {
-        return { gene_name: x.final_word };
-    })
+export const downloadDataAsJson = (data: AnalysisImageModel[], invalidGenes: boolean): void => {
+    const toBeDownloadedData: any = {}
+
+    data.forEach(image => {
+        image.spellResult = image.spellResult.filter(x => x.gene_exists || (!x.gene_exists && invalidGenes && x.use_for_download));
+        if (image.spellResult.length > 0) {
+            let imageSpellingData = image.spellResult.map(x => {
+                return { gene_name: x.final_word };
+            });
+            if (image.image.type in toBeDownloadedData) {
+                toBeDownloadedData[image.image.type] = imageSpellingData.concat(toBeDownloadedData[image.image.type]);
+            } else {
+                toBeDownloadedData[image.image.type] = imageSpellingData;
+            }
+        }
+
+    });
+
     const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
         JSON.stringify(toBeDownloadedData)
     )}`;

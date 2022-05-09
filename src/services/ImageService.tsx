@@ -9,7 +9,7 @@ const CreateImageService = () => {
 
     const croppedImages: BehaviorSubject<CroppedImageModel[]> = new BehaviorSubject<CroppedImageModel[]>([]);
 
-    const viewFocus: BehaviorSubject<string> = new BehaviorSubject<string>('normal');
+    const areaSetting: BehaviorSubject<'editing' | 'analyzing'> = new BehaviorSubject<'editing' | 'analyzing'>('editing');
 
     const setRawImage = (image: string) => {
         rawImage.next(image);
@@ -23,8 +23,8 @@ const CreateImageService = () => {
         editingImage.next(bool);
     }
 
-    const setViewFocus = (view: string) => {
-        viewFocus.next(view);
+    const setAreaSetting = (view: 'editing' | 'analyzing') => {
+        areaSetting.next(view);
     }
 
     const getEditingImage = editingImage.asObservable();
@@ -33,7 +33,7 @@ const CreateImageService = () => {
 
     const getCroppedImages = croppedImages.asObservable();
 
-    const getViewFocus = viewFocus.asObservable();
+    const getAreaSetting = areaSetting.asObservable();
 
     return {
         setRawImage,
@@ -42,8 +42,8 @@ const CreateImageService = () => {
         setCroppedImages,
         getCroppedImages,
         getEditingImage,
-        setViewFocus,
-        getViewFocus
+        setAreaSetting,
+        getAreaSetting
     }
 }
 
