@@ -1,4 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
+import { CroppedImageModel } from './../models/cropped-images.model';
 
 const CreateImageService = () => {
 
@@ -6,33 +7,43 @@ const CreateImageService = () => {
 
     const rawImage: BehaviorSubject<string> = new BehaviorSubject('');
 
-    const croppedImage: BehaviorSubject<Blob> = new BehaviorSubject<Blob>(new Blob());
+    const croppedImages: BehaviorSubject<CroppedImageModel[]> = new BehaviorSubject<CroppedImageModel[]>([]);
+
+    const viewFocus: BehaviorSubject<string> = new BehaviorSubject<string>('normal');
 
     const setRawImage = (image: string) => {
         rawImage.next(image);
     }
 
-    const setCroppedImage = (image: Blob) => {
-        croppedImage.next(image);
+    const setCroppedImages = (croppedImage: CroppedImageModel[]) => {
+        croppedImages.next(croppedImage);
     }
 
     const setEditingImage = (bool: boolean) => {
         editingImage.next(bool);
     }
 
+    const setViewFocus = (view: string) => {
+        viewFocus.next(view);
+    }
+
     const getEditingImage = editingImage.asObservable();
 
     const getRawImage = rawImage.asObservable();
 
-    const getCroppedImage = croppedImage.asObservable();
+    const getCroppedImages = croppedImages.asObservable();
+
+    const getViewFocus = viewFocus.asObservable();
 
     return {
         setRawImage,
         getRawImage,
         setEditingImage,
-        setCroppedImage,
-        getCroppedImage,
+        setCroppedImages,
+        getCroppedImages,
         getEditingImage,
+        setViewFocus,
+        getViewFocus
     }
 }
 

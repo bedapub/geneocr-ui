@@ -18,6 +18,7 @@ function FileUploadComponent() {
     if (preview) {
       serviceInstance.setRawImage(preview);
       serviceInstance.setEditingImage(false);
+      serviceInstance.setViewFocus('editing');
     }
   };
 
@@ -37,6 +38,7 @@ function FileUploadComponent() {
         <div>
           <img
             src={preview}
+            style={{ maxHeight: "50vh", maxWidth:"45vw" }}
             className="my-5 border border-gray-400 rounded-lg"
             alt="preview of uploaded file"
           />

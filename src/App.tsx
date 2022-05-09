@@ -30,9 +30,20 @@ function App() {
     setAreaSettings(copyAreaSettings);
   }
 
+  const setViewFocus = (view: string) => {
+    if (view === 'normal') {
+      changeAreaSetting('editing', AreaSetting.DEFAULT);
+    } else if (view === 'editing') {
+      changeAreaSetting('editing', AreaSetting.EXPANDED);
+    } else if (view === 'analyzing') {
+      changeAreaSetting('analyzing', AreaSetting.EXPANDED);
+    }
+  }
+
   useEffect(() => {
-    const subscription = serviceInstance.getEditingImage.subscribe(setEditing)
-    return () => subscription.unsubscribe()
+    const subscriptionEditing = serviceInstance.getEditingImage.subscribe(setEditing);
+    const subscriptionViewFocus = serviceInstance.getViewFocus.subscribe(setViewFocus)
+    return () => { subscriptionEditing.unsubscribe(); subscriptionViewFocus.unsubscribe(); }
   }, [serviceInstance])
 
   return (
@@ -59,7 +70,7 @@ function App() {
                 {areaSettings.editing === AreaSetting.DEFAULT && (
                   <Tooltip title="Expand area">
                     <IconButton onClick={(_) => changeAreaSetting('editing', AreaSetting.EXPANDED)} aria-label="openfull"
-                     disabled={areaSettings.analyzing === AreaSetting.EXPANDED}>
+                      disabled={areaSettings.analyzing === AreaSetting.EXPANDED}>
                       <OpenInFullIcon />
                     </IconButton>
                   </Tooltip>
@@ -73,7 +84,7 @@ function App() {
                 )}
               </div>
             </div>
-            <div  className={`mt-2.5 ${areaSettings.analyzing === AreaSetting.DEFAULT ? 'visible' : 'invisible'}`}>
+            <div className={`mt-2.5 ${areaSettings.analyzing === AreaSetting.DEFAULT ? 'visible' : 'invisible'}`}>
               {editing && <FileUploadComponent />}
               {!editing && <FileCropComponent />}
             </div>
@@ -89,7 +100,7 @@ function App() {
                 {areaSettings.analyzing === AreaSetting.DEFAULT && (
                   <Tooltip title="Expand area">
                     <IconButton onClick={(_) => changeAreaSetting('analyzing', AreaSetting.EXPANDED)} aria-label="openfull"
-                    disabled={areaSettings.editing === AreaSetting.EXPANDED}>
+                      disabled={areaSettings.editing === AreaSetting.EXPANDED}>
                       <OpenInFullIcon />
                     </IconButton>
                   </Tooltip>

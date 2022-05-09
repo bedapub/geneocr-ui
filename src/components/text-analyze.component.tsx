@@ -25,6 +25,7 @@ import { downloadDataAsTxt, downloadDataAsJson } from "../helpers/download-data"
 import Checkbox from '@mui/material/Checkbox';
 import Snackbar from '@mui/material/Snackbar';
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
+import { CroppedImageModel } from './../models/cropped-images.model';
 
 function TextAnalyzeComponent() {
   const { serviceInstance } = useContext(StateContext);
@@ -35,8 +36,8 @@ function TextAnalyzeComponent() {
   const [useInvalidGenes, setUseInvalidGenes] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<boolean>(false);
 
-  const handleNewData = (data: Blob) => {
-    analyzeImage(data);
+  const handleNewData = (data: CroppedImageModel[]) => {
+    //analyzeImage(data);
     setDataReady(true);
   };
 
@@ -53,7 +54,7 @@ function TextAnalyzeComponent() {
     const spelling: SpellCheckItem[] = await checkSpellingRequest(
       response.text
     );
-    if (response.status == "success") {
+    if (response.status === "success") {
       const formattedSpelling: SpellCheckItemView[] = spelling.map((x) => {
         return {
           suggestions: x.suggestions,
@@ -110,8 +111,8 @@ function TextAnalyzeComponent() {
 
 
   useEffect(() => {
-    const subscription: Subscription = serviceInstance.getCroppedImage
-      .pipe(filter((x) => !!x && x.size !== 0))
+    const subscription: Subscription = serviceInstance.getCroppedImages
+      .pipe(filter((x: CroppedImageModel[]) => !!x && x.length !== 0))
       .subscribe(handleNewData);
     return () => subscription.unsubscribe();
   }, [serviceInstance]);
