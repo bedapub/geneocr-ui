@@ -5,4 +5,5 @@ export interface CroppedImageModel {
     type: string;
     dataUrl: string;
     status: 'cropped' | 'analyzing' | 'wordspelling' | 'analyzed';
+    cropBoxData: any;
 }
