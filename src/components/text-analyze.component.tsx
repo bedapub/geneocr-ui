@@ -72,7 +72,19 @@ function TextAnalyzeComponent() {
         copyData[i].image.status = 'analyzed';
         setData(copyData);
       } else {
+        const formattedSpelling: SpellCheckItemView[] = response.text.map((x) => {
+          return {
+            suggestions: [],
+            initial_word: x,
+            gene_exists: false,
+            best_canditate: '',
+            final_word: x,
+            helper_text: '',
+            use_for_download: true
+          }
+        })
         const copyData = [...dataRef.current];
+        copyData[i].spellResult = formattedSpelling;
         copyData[i].image.status = 'analyzed';
         setData(copyData);
       }
