@@ -1,3 +1,4 @@
+import { StringLiteralLike } from "typescript";
 import { ImageAnalyzationResponseModel } from "../models/image-analysis.model";
 import { SpellCheckItem } from "../models/word-spelling.model";
 
@@ -13,9 +14,10 @@ export const analyzeImageRequest = (file: File) : Promise<ImageAnalyzationRespon
         .catch(error => console.warn(error));
 }
 
-export const checkSpellingRequest = (value: string[]) : Promise<SpellCheckItem[]> => {
+export const checkSpellingRequest = (value: string[], type: string) : Promise<SpellCheckItem[]> => {
     const body = {
-        value
+        value,
+        type
     }
     const requestOptions = {
         method: 'POST',
@@ -27,24 +29,47 @@ export const checkSpellingRequest = (value: string[]) : Promise<SpellCheckItem[]
         .catch(error => console.warn(error));
 }
 
-export const wordValidationRequest = (value: string) : Promise<any> => {
+export const wordValidationRequest = (value: string, type: string) : Promise<any> => {
     const requestOptions = {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
     };
-    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/check?word=${value}&type=gene`, requestOptions)
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/check?word=${value}&type=${type}`, requestOptions)
         .then(response => response.json())
         .catch(error => console.warn(error));
 }
 
-export const sharpenImageRequest = (file: File) : Promise<any> => {
+export const sharpenFastImageRequest = (file: File, algorythm: string) : Promise<any> => {
     const formData = new FormData();
     formData.append('file', file)
     const requestOptions = {
         method: 'POST',
         body: formData
     };
-    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/image-helper/sharpen`, requestOptions)
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/image-helper/sharpen_fast?algorythm=${algorythm}`, requestOptions)
         .then(response => response.blob())
+        .catch(error => console.warn(error));
+}
+
+export const sharpenSlowImageRequest = (file: File) : Promise<any> => {
+    const formData = new FormData();
+    formData.append('file', file)
+    const requestOptions = {
+        method: 'POST',
+        body: formData
+    };
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/image-helper/sharpen_slow`, requestOptions)
+        .then(response => response.blob())
+        .catch(error => console.warn(error));
+}
+
+
+export const getGeneTypesRequest = () : Promise<any> => {
+    const requestOptions = {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    };
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/get-gene-types`, requestOptions)
+        .then(response => response.json())
         .catch(error => console.warn(error));
 }

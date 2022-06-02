@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef } from "react";
+import React, { useState, useContext, useEffect, useRef, CanvasHTMLAttributes } from "react";
 import { StateContext } from "../state";
 import Cropper from "react-cropper";
 import { CroppedImageModel } from './../models/cropped-images.model';
@@ -19,29 +19,33 @@ import Select from '@mui/material/Select';
 import NothingCropppedYet from "./crop-imagesplitter.png";
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import { Box, LinearProgress } from "@mui/material";
+import { sharpenSlowImageRequest, sharpenFastImageRequest, getGeneTypesRequest } from "../helpers/helper";
+import { cropImage, waitForImageReady } from "../helpers/image-crop";
 
-enum State {
-  CROPPING,
-  SHARPENING,
-  CROPPED
-}
+
 
 function FileCropComponent() {
   const { serviceInstance } = useContext(StateContext);
   const [raw, setRaw] = useState<string>();
   const [cropper, setCropper] = useState<Cropper>();
-  const [croppedImage, setCroppedImage] = useState<string>();
-  const [state, setState] = useState<State>(State.CROPPING);
   const [croppedImages, setCroppedImages] = useState<CroppedImageModel[]>([])
   const [isSharpening, setIsSharpening] = useState<boolean>(false);
   const [editingExisting, setEditingExisting] = useState<number>(-1);
   const [cropperEdit, setCropperEdit] = useState<boolean>(true);
+  const [oldBlobs, setOldBlobs] = useState<Blob[]>([]);
+  const [geneTypes, setGeneTypes] = useState<string[]>(['all']);
   const reference = useRef<boolean>();
   reference.current = isSharpening;
 
   const setRawImage = (image: string) => {
     setRaw(image);
   };
+
+  const testSetCropper = (cropperValue: Cropper) => {
+    console.log('setting cropper');
+    setCropper(cropperValue);
+  }
 
   const handleImageCrop = () => {
     if (cropper) {
@@ -54,14 +58,29 @@ function FileCropComponent() {
               blob: blobValue,
               title: `crop ${copyCroppedImages.length + 1}`,
               type: 'gene',
+              geneType: 'all',
               dataUrl: img,
               status: 'cropped',
-              cropBoxData: cropper.getCropBoxData()
+              cropBoxData: {
+                left: cropper.getCropBoxData().left,
+                top: cropper.getCropBoxData().top,
+                width: cropper.getCropBoxData().width,
+                height: cropper.getCropBoxData().height,
+                imageHeight: cropper.getCanvasData().naturalHeight,
+                imageWidth: cropper.getCanvasData().naturalWidth
+              }
             });
           } else {
             copyCroppedImages[editingExisting].blob = blobValue;
             copyCroppedImages[editingExisting].dataUrl = img;
-            copyCroppedImages[editingExisting].cropBoxData = cropper.getCropBoxData();
+            copyCroppedImages[editingExisting].cropBoxData = {
+              left: cropper.getCropBoxData().left,
+              top: cropper.getCropBoxData().top,
+              width: cropper.getCropBoxData().width,
+              height: cropper.getCropBoxData().height,
+              imageHeight: cropper.getCanvasData().naturalHeight,
+              imageWidth: cropper.getCanvasData().naturalWidth
+            }
             setEditingExisting(-1);
           }
 
@@ -82,7 +101,6 @@ function FileCropComponent() {
   };
 
   const startAnalysis = () => {
-    setState(State.CROPPED);
     serviceInstance.setCroppedImages(croppedImages);
     serviceInstance.setAreaSetting('analyzing');
   }
@@ -96,30 +114,7 @@ function FileCropComponent() {
     }
   }
 
-  /*   const setSharpening = async (value: boolean) => {
-      if (!value) {
-        console.log(blob);
-        serviceInstance.setCroppedImage(blob);
-        setState(State.CROPPED);
-        setIsSharpening(false);
-      } else {
-        setIsSharpening(true);
-        var file = new File([blob], "image.png", {
-          lastModified: new Date().getTime(),
-          type: blob.type,
-        });
-        const image = await sharpenImageRequest(file);
-        if (reference.current) {
-          serviceInstance.setCroppedImage(image);
-          setState(State.CROPPED);
-          const imageObjectURL = URL.createObjectURL(image);
-          setCroppedImage(imageObjectURL);
-          setIsSharpening(false);
-        }
-      }
-    } */
-
-  const changeCroppedImageAttribute = (attribute: 'title' | 'type', value: string, index: number) => {
+  const changeCroppedImageAttribute = (attribute: 'title' | 'type' | 'geneType', value: string, index: number) => {
     const copyCroppedImages = [...croppedImages];
     copyCroppedImages[index][attribute] = value;
     setCroppedImages(copyCroppedImages);
@@ -131,10 +126,101 @@ function FileCropComponent() {
     setCroppedImages(copyCroppedImages);
   }
 
-  const enableEdit = () => {
-    serviceInstance.setEditingImage(true);
-    setCroppedImage("");
+  const startFastSharpening = async () => {
+    if (cropper) {
+      cropper.reset();
+      cropper.setCropBoxData({
+        height: cropper.getCanvasData().height,
+        left: cropper.getCanvasData().left,
+        top: cropper.getCanvasData().top,
+        width: cropper.getCanvasData().width
+      });
+      cropper.getCroppedCanvas().toBlob(async (blob: Blob | null) => {
+        if (blob) {
+          setIsSharpening(true);
+          console.log("fast sharpening");
+          var file = new File([blob], "image.png", {
+            lastModified: new Date().getTime(),
+            type: blob.type,
+          });
+          const imageBlob = await sharpenFastImageRequest(file, 'cv2kernel');
+          if (reference.current) {
+            const imageObjectURL = URL.createObjectURL(imageBlob);
+            const copyOldBlobs = [...oldBlobs];
+            copyOldBlobs.push(blob);
+            setOldBlobs(copyOldBlobs);
+            setRaw(imageObjectURL);
+            setIsSharpening(false);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await recropImages();
+          }
+        }
+      });
+    }
   };
+
+  const recropImages = async () => {
+    if (cropper) {
+      const copyCroppedImages = [...croppedImages];
+      for await (const croppedImage of copyCroppedImages) {
+        const widthFactor = cropper.getCanvasData().naturalWidth / croppedImage.cropBoxData.imageWidth;
+        const heightFactor = cropper.getCanvasData().naturalHeight / croppedImage.cropBoxData.imageHeight;
+        cropper.enable();
+        cropper.setCropBoxData({
+          height: croppedImage.cropBoxData.height * heightFactor,
+          width: croppedImage.cropBoxData.width * widthFactor,
+          top: croppedImage.cropBoxData.top * heightFactor,
+          left: croppedImage.cropBoxData.left * widthFactor
+        });
+        const img = cropper.getCroppedCanvas().toDataURL();
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          cropper.getCroppedCanvas().toBlob((blobValue: Blob | null) => {
+            console.log(img, blobValue);
+            if (blobValue) {
+              resolve(blobValue);
+            } else {
+              reject(null);
+            }
+          });
+        });
+        croppedImage.dataUrl = img;
+        croppedImage.blob = blob;
+      }
+      cropper.setCropBoxData({
+        height: cropper.getCanvasData().height,
+        left: cropper.getCanvasData().left,
+        top: cropper.getCanvasData().top,
+        width: cropper.getCanvasData().width
+      });
+      cropper.disable();
+      setCroppedImages(copyCroppedImages);
+    }
+  }
+
+  const startSlowSharpening = async () => {
+    if (cropper) {
+      cropper.getCroppedCanvas().toBlob(async (blob: Blob | null) => {
+        if (blob) {
+          setIsSharpening(true);
+          console.log("slow sharpening");
+          var file = new File([blob], "image.png", {
+            lastModified: new Date().getTime(),
+            type: blob.type,
+          });
+          const imageBlob = await sharpenSlowImageRequest(file);
+          if (reference.current) {
+            const imageObjectURL = URL.createObjectURL(imageBlob);
+            console.log(imageObjectURL);
+            setIsSharpening(false);
+          }
+        }
+      });
+    }
+  };
+
+  const cancelSharpening = () => {
+    setIsSharpening(false);
+  }
 
   const handleSetCrop = (data: CroppedImageModel, index: number) => {
     if (cropper) {
@@ -159,6 +245,9 @@ function FileCropComponent() {
 
   useEffect(() => {
     const subscription = serviceInstance.getRawImage.subscribe(setRawImage);
+    getGeneTypesRequest().then(value => {
+      setGeneTypes(value);
+    })
     return () => subscription.unsubscribe();
   }, [serviceInstance]);
 
@@ -169,10 +258,39 @@ function FileCropComponent() {
           <div style={{ display: "flex", flexDirection: "column" }} >
             <div className="flex flex-row">
               <div>
-                <Cropper style={{ width: "50vw", height: "100%", maxHeight: "50vh", maxWidth: "50vw" }} zoomTo={0.5} initialAspectRatio={1}
-                  src={raw} viewMode={1} minCropBoxHeight={10} minCropBoxWidth={10}
-                  background={false} responsive={true} autoCropArea={1} checkOrientation={false}
-                  onInitialized={(instance) => setCropper(instance)} guides={true} />
+                <div className="flex flex-row">
+                  {cropperEdit && (
+                    <button className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800" disabled>Edit is enabled</button>
+                  )}
+                  {!cropperEdit && (
+                    <button className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900" disabled>Edit is disabled</button>
+                  )}
+
+                  {!isSharpening && (
+                    <div>
+                      <button onClick={startFastSharpening} disabled={isSharpening} className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">fast sharpening</button>
+                      <button onClick={startSlowSharpening} disabled={isSharpening} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Slow sharpening</button>
+                    </div>)
+
+                  }
+                  {isSharpening && (
+                    <button onClick={cancelSharpening} type="button" className="py-2.5 px-5 mr-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">Cancel</button>
+                  )}
+                </div>
+                {isSharpening && (
+                  <div className="mb-2">
+                    <Box className="mt-2" sx={{ width: '100%' }}>
+                      <LinearProgress />
+                    </Box>
+                    <p className="text-xs text-neutral-400">sharpening image... (You can cancel sharpening with the <strong>cancel</strong> button)</p>
+                  </div>
+                )}
+                {!isSharpening && (
+                  <Cropper style={{ width: "100%", height: "auto", maxHeight: "100%", maxWidth: "100%" }} zoomTo={0.5} initialAspectRatio={1}
+                    src={raw} viewMode={1} minCropBoxHeight={10} minCropBoxWidth={10}
+                    background={false} responsive={true} autoCropArea={1} checkOrientation={false}
+                    onInitialized={(instance) => testSetCropper(instance)} guides={true} />
+                )}
                 <div className="mt-3 flex flex-row-reverse">
                   <button onClick={handleImageCrop} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Crop image</button>
                 </div>
@@ -193,36 +311,36 @@ function FileCropComponent() {
                           </TableHead>
                           <TableBody>
                             {croppedImages.map((imageItem, i) => (
-                              <TableRow
-                                key={i}
-                                sx={{
-                                  "&:last-child td, &:last-child th": { border: 0 },
-                                }}
-                                className={i === editingExisting ? 'border border-4 border-solid border-sky-600 rounded-md' : ''}
-                              >
+                              <TableRow key={i} sx={{ "&:last-child td, &:last-child th": { border: 0 }, }}
+                                className={i === editingExisting ? 'border border-4 border-solid border-sky-600 rounded-md' : ''} >
                                 <TableCell component="th" scope="row">
-                                  <TextField
-                                    id="outlined-size-small"
-                                    value={imageItem.title}
-                                    size="small"
+                                  <TextField id="outlined-size-small" value={imageItem.title} size="small"
                                     onChange={(e) => changeCroppedImageAttribute('title', e.target.value, i)}
-                                    fullWidth
-                                    style={{ minWidth: 100, }}
-                                  />
+                                    fullWidth style={{ minWidth: 100, }} />
                                 </TableCell>
                                 <TableCell align="right">
                                   <img src={imageItem.dataUrl} style={{ maxHeight: "200px", maxWidth: "200px" }} />
                                 </TableCell>
                                 <TableCell align="right">
                                   <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
-                                    <InputLabel id="select-cropped-image-type">Type</InputLabel>
+                                    <InputLabel id="select-word-type">Type</InputLabel>
                                     <Select value={imageItem.type} onChange={(e) => changeCroppedImageAttribute('type', e.target.value, i)}
-                                      labelId="select-cropped-image-type" label="Type">
+                                      labelId="select-word-type" label="Type">
                                       <MenuItem value="gene">Gene</MenuItem>
-                                      <MenuItem value="cell">Cell</MenuItem>
-                                      <MenuItem value="ensbl">ENSBL</MenuItem>
+                                      <MenuItem value="text">Free text</MenuItem>
                                     </Select>
                                   </FormControl>
+                                  {imageItem.type === 'gene' && (
+                                    <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
+                                      <InputLabel id="select-gene-type">Gene type</InputLabel>
+                                      <Select value={imageItem?.geneType} onChange={(e) => changeCroppedImageAttribute('geneType', e.target.value, i)}
+                                        labelId="select-gene-type" label="Type">
+                                        {geneTypes.map((geneType, geneTypeIndex) => (
+                                          <MenuItem key={`${geneType}-${geneTypeIndex}`} value={geneType}>{geneType}</MenuItem>
+                                        ))}
+                                      </Select>
+                                    </FormControl>
+                                  )}
                                 </TableCell>
                                 <TableCell align="right">
                                   <IconButton onClick={() => { handleSetCrop(imageItem, i) }} aria-label="delete" size="large">
@@ -258,41 +376,10 @@ function FileCropComponent() {
             </div>
             <div className="mt-5 w-full flex justify-end">
               <button type="button" onClick={startAnalysis} disabled={croppedImages.length === 0} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
-                {state === State.CROPPING ? 'Start analysis' : 'Start analysis again'}
+                {true ? 'Start analysis' : 'Start analysis again'}
               </button>
             </div>
           </div>
-          {/* {state === State.SHARPENING && (
-            <div>
-              <p className="font-bold">Important</p>
-              <p className="text-sm mb-2">Sharpening should be only used if necessary, because sharpen may take a long time and is unnecessary for a lot of images.</p>
-              <button type="button" onClick={(_) => setSharpening(true)} disabled={isSharpening}
-                className="text-gray-900 bg-white border border-gray-300 focus:outline-none hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:focus:ring-gray-700">
-                Sharpen image
-              </button>
-              <button type="button" onClick={(_) => setSharpening(false)}
-                className="mr-2 text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
-                Continue without sharpening
-              </button>
-              {isSharpening && (
-                <div>
-                  <Box className="mt-2" sx={{ width: '100%' }}>
-                    <LinearProgress />
-                  </Box>
-                  <p className="text-xs text-neutral-400">sharpening image... (You can cancel sharpening by continouing without sharpening)</p>
-                </div>
-              )}
-              <img src={croppedImage} className="my-5 border border-gray-400 rounded-lg" alt="preview of cropped" />
-            </div>
-          )} */}
-          {/* {state === State.CROPPED && (
-            <div>
-              <img src={croppedImage} className="my-5 border border-gray-400 rounded-lg" alt="preview of cropped" />
-              <button type="button" onClick={enableEdit} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
-                Change image
-              </button>
-            </div>
-          )} */}
         </div>
       )}
     </div>

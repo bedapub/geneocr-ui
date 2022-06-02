@@ -53,25 +53,29 @@ function TextAnalyzeComponent() {
       const response: ImageAnalyzationResponseModel = await analyzeImageRequest(
         file
       );
-      changeStatusOfImageItem('wordspelling', i);
-      const spelling: SpellCheckItem[] = await checkSpellingRequest(
-        response.text
-      );
-      const formattedSpelling: SpellCheckItemView[] = spelling.map((x) => {
-        return {
-          suggestions: x.suggestions,
-          initial_word: x.initial_word,
-          gene_exists: x.gene_exists,
-          best_canditate: x.best_canditate,
-          final_word: x.initial_word,
-          helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!',
-          use_for_download: true
-        };
-      });
-      const copyData = [...dataRef.current];
-      copyData[i].spellResult = formattedSpelling;
-      copyData[i].image.status = 'analyzed';
-      setData(copyData);
+      if (item.image.type === 'gene') {
+        changeStatusOfImageItem('wordspelling', i);
+        const spelling: SpellCheckItem[] = await checkSpellingRequest(response.text, item.image.geneType);
+        const formattedSpelling: SpellCheckItemView[] = spelling.map((x) => {
+          return {
+            suggestions: x.suggestions,
+            initial_word: x.initial_word,
+            gene_exists: x.gene_exists,
+            best_canditate: x.best_canditate,
+            final_word: x.initial_word,
+            helper_text: x.gene_exists ? 'Gene is valid' : 'Invalid gene name!',
+            use_for_download: true
+          };
+        });
+        const copyData = [...dataRef.current];
+        copyData[i].spellResult = formattedSpelling;
+        copyData[i].image.status = 'analyzed';
+        setData(copyData);
+      } else {
+        const copyData = [...dataRef.current];
+        copyData[i].image.status = 'analyzed';
+        setData(copyData);
+      }
     }
   };
 
@@ -92,7 +96,7 @@ function TextAnalyzeComponent() {
     copyData[indexImage].spellResult[indexSpelling].gene_exists = true;
     copyData[indexImage].spellResult[indexSpelling].helper_text = 'Checking gene...';
     setData(copyData);
-    const response = await wordValidationRequest(word);
+    const response = await wordValidationRequest(word, copyData[indexImage].image.geneType);
     copyData = [...data];
     copyData[indexImage].spellResult[indexSpelling].gene_exists = response.valid;
     copyData[indexImage].spellResult[indexSpelling].helper_text = response.valid ? 'Gene is valid' : 'Invalid gene name!';
@@ -167,7 +171,9 @@ function TextAnalyzeComponent() {
                       <TableHead>
                         <TableRow>
                           <TableCell>analyzed word</TableCell>
-                          <TableCell>suggestions</TableCell>
+                          {item.image.type === 'gene' && (
+                            <TableCell>suggestions</TableCell>
+                          )}
                           <TableCell>use in download</TableCell>
                           <TableCell>final word</TableCell>
                         </TableRow>
@@ -176,28 +182,36 @@ function TextAnalyzeComponent() {
                         {item.spellResult.map((line, indexSpelling) => (
                           <TableRow key={`spelling-${indexSpelling}`} sx={{ "&:last-child td, &:last-child th": { border: 0 } }} >
                             <TableCell component="th" scope="row"> {line.initial_word} </TableCell>
-                            <TableCell align="right">
-                              {line.suggestions.length !== 0 && (
-                                <div className="suggestions-stack-box">
-                                  {line.suggestions.map((x, y) => {
-                                    var key = x + y;
-                                    if (line.best_canditate && x === line.best_canditate) {
-                                      return (<Chip key={key} label={x} size="small" variant="outlined" onClick={(e) => { changeFinalWord((e as any).target.innerText, indexSpelling, indexImage); checkWord((e as any).target.innerText, indexSpelling, indexImage) }} />);
-                                    } else {
-                                      return (<Chip key={key} label={x} size="small" onClick={(e) => { changeFinalWord((e as any).target.innerText, indexSpelling, indexImage); checkWord((e as any).target.innerText, indexSpelling, indexImage) }} />);
-                                    }
-                                  })}
-                                </div>
-                              )}
-                            </TableCell>
+                            {item.image.type === 'gene' && (
+                              <TableCell align="right">
+                                {line.suggestions.length !== 0 && (
+                                  <div className="suggestions-stack-box">
+                                    {line.suggestions.map((x, y) => {
+                                      var key = x + y;
+                                      if (line.best_canditate && x === line.best_canditate) {
+                                        return (<Chip key={key} label={x} size="small" variant="outlined" onClick={(e) => { changeFinalWord((e as any).target.innerText, indexSpelling, indexImage); checkWord((e as any).target.innerText, indexSpelling, indexImage) }} />);
+                                      } else {
+                                        return (<Chip key={key} label={x} size="small" onClick={(e) => { changeFinalWord((e as any).target.innerText, indexSpelling, indexImage); checkWord((e as any).target.innerText, indexSpelling, indexImage) }} />);
+                                      }
+                                    })}
+                                  </div>
+                                )}
+                              </TableCell>
+                            )}
                             <TableCell align="right">
                               <Checkbox checked={line.use_for_download}
                                 onChange={(e) => changeDownload(e, indexSpelling, indexImage)} />
                             </TableCell>
                             <TableCell align="right">
-                              <TextField id="outlined-size-small" value={line.final_word} size="small" onChange={(e) => changeFinalWord(e.target.value, indexSpelling, indexImage)}
-                                onBlur={(e) => checkWord(e.target.value, indexSpelling, indexImage)} helperText={line.helper_text} error={!line.gene_exists} fullWidth style={{ minWidth: 170, }}
-                                className={line.gene_exists && line.helper_text === 'Gene is valid' ? "valid-name-input-field" : "none"} />
+                              {item.image.type === 'gene' && (
+                                <TextField id="outlined-size-small" value={line.final_word} size="small" onChange={(e) => changeFinalWord(e.target.value, indexSpelling, indexImage)}
+                                  onBlur={(e) => checkWord(e.target.value, indexSpelling, indexImage)} helperText={line.helper_text} error={!line.gene_exists} fullWidth style={{ minWidth: 170, }}
+                                  className={line.gene_exists && line.helper_text === 'Gene is valid' ? "valid-name-input-field" : "none"} />
+                              )}
+                              {item.image.type !== 'gene' && (
+                                <TextField id="outlined-size-small" value={line.final_word} size="small" onChange={(e) => changeFinalWord(e.target.value, indexSpelling, indexImage)}
+                                  helperText={line.helper_text} fullWidth style={{ minWidth: 170, }} />
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
