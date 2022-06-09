@@ -9,9 +9,9 @@ COPY . /app
 RUN yarn build
 
 # stage 2 - build the final image and copy the react build files
-FROM nginx:1.17.8-alpine
-COPY --from=build /app/build /usr/share/nginx/html
+FROM nginxinc/nginx-unprivileged:stable-alpine
+COPY --chown=101 --from=build /app/build /usr/share/nginx/html
 RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx/nginx.conf /etc/nginx/conf.d
+COPY --chown=101 nginx/nginx.conf /etc/nginx/conf.d
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
