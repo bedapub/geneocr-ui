@@ -4,8 +4,8 @@ FROM node:13.12.0-alpine
 # set working directory
 WORKDIR /app
 
-RUN addgroup -g 1002 pmdagroup && \
-    adduser -g pmdagroup -u 1001 pmdauser
+RUN addgroup -S pmdagroup && adduser -S pmdauser -G pmdagroup -u 1001
+RUN apk update
 
 USER pmdauser
 
