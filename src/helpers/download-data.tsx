@@ -8,10 +8,10 @@ export const downloadDataAsTxt = (data: AnalysisImageModel[], invalidGenes: bool
             downloadString += `\n\n---${image.image.type}---\n\n`;
         }
         image.spellResult.forEach(x => {
-            if (x.gene_exists) {
-                downloadString += `${x.final_word}\n`
-            } else if (invalidGenes && x.use_for_download) {
-                downloadString += `${x.final_word}\n`
+            if (invalidGenes && x.use_for_download){
+                downloadString += `${x.final_word}\n`;
+            } else if (x.gene_exists && x.use_for_download) {
+                downloadString += `${x.final_word}\n`;
             }
         });
     });
@@ -29,7 +29,7 @@ export const downloadDataAsJson = (data: AnalysisImageModel[], invalidGenes: boo
     const toBeDownloadedData: any = {}
 
     data.forEach(image => {
-        image.spellResult = image.spellResult.filter(x => x.gene_exists || (!x.gene_exists && invalidGenes && x.use_for_download));
+        image.spellResult = image.spellResult.filter(x => (invalidGenes && x.use_for_download) || (x.gene_exists && x.use_for_download));
         if (image.spellResult.length > 0) {
             let imageSpellingData = image.spellResult.map(x => {
                 return { gene_name: x.final_word };
