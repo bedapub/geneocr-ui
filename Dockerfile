@@ -19,6 +19,8 @@ COPY . ./
 RUN addgroup -S pmdagroup && adduser -S pmdauser -G pmdagroup -u 1001
 RUN apk update
 
+RUN chown -R node:node /app/node_modules
+
 USER pmdauser
 
 EXPOSE 3000
