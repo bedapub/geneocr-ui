@@ -1,4 +1,3 @@
-import { StringLiteralLike } from "typescript";
 import { ImageAnalyzationResponseModel } from "../models/image-analysis.model";
 import { SpellCheckItem } from "../models/word-spelling.model";
 
@@ -46,7 +45,7 @@ export const sharpenFastImageRequest = (file: File, algorythm: string) : Promise
         method: 'POST',
         body: formData
     };
-    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/image-helper/sharpen_fast?algorythm=${algorythm}`, requestOptions)
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/image-helper/sharpen?algorythm=${algorythm}`, requestOptions)
         .then(response => response.blob())
         .catch(error => console.warn(error));
 }
@@ -64,12 +63,12 @@ export const sharpenSlowImageRequest = (file: File) : Promise<any> => {
 }
 
 
-export const getGeneTypesRequest = () : Promise<any> => {
+export const getGeneOrganismsRequest = () : Promise<any> => {
     const requestOptions = {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
     };
-    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/get-gene-types`, requestOptions)
+    return fetch(`${process.env.REACT_APP_SERVICE_URL}/v1/spelling/get-gene-organisms`, requestOptions)
         .then(response => response.json())
         .catch(error => console.warn(error));
 }

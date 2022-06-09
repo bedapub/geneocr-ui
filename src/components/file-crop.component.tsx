@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef, CanvasHTMLAttributes } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { StateContext } from "../state";
 import Cropper from "react-cropper";
 import { CroppedImageModel } from './../models/cropped-images.model';
@@ -20,8 +20,7 @@ import NothingCropppedYet from "./crop-imagesplitter.png";
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import { Box, LinearProgress } from "@mui/material";
-import { sharpenSlowImageRequest, sharpenFastImageRequest, getGeneTypesRequest } from "../helpers/helper";
-import { cropImage, waitForImageReady } from "../helpers/image-crop";
+import { sharpenFastImageRequest, getGeneOrganismsRequest } from "../helpers/helper";
 
 
 
@@ -34,7 +33,7 @@ function FileCropComponent() {
   const [editingExisting, setEditingExisting] = useState<number>(-1);
   const [cropperEdit, setCropperEdit] = useState<boolean>(true);
   const [oldBlobs, setOldBlobs] = useState<Blob[]>([]);
-  const [geneTypes, setGeneTypes] = useState<string[]>(['all']);
+  const [geneOrganisms, setGeneOrganisms] = useState<string[]>(['all']);
   const reference = useRef<boolean>();
   reference.current = isSharpening;
 
@@ -43,7 +42,6 @@ function FileCropComponent() {
   };
 
   const testSetCropper = (cropperValue: Cropper) => {
-    console.log('setting cropper');
     setCropper(cropperValue);
   }
 
@@ -126,7 +124,7 @@ function FileCropComponent() {
     setCroppedImages(copyCroppedImages);
   }
 
-  const startFastSharpening = async () => {
+  const startSharpening = async () => {
     if (cropper) {
       cropper.reset();
       cropper.setCropBoxData({
@@ -138,7 +136,6 @@ function FileCropComponent() {
       cropper.getCroppedCanvas().toBlob(async (blob: Blob | null) => {
         if (blob) {
           setIsSharpening(true);
-          console.log("fast sharpening");
           var file = new File([blob], "image.png", {
             lastModified: new Date().getTime(),
             type: blob.type,
@@ -175,7 +172,6 @@ function FileCropComponent() {
         const img = cropper.getCroppedCanvas().toDataURL();
         const blob = await new Promise<Blob>((resolve, reject) => {
           cropper.getCroppedCanvas().toBlob((blobValue: Blob | null) => {
-            console.log(img, blobValue);
             if (blobValue) {
               resolve(blobValue);
             } else {
@@ -196,27 +192,6 @@ function FileCropComponent() {
       setCroppedImages(copyCroppedImages);
     }
   }
-
-  const startSlowSharpening = async () => {
-    if (cropper) {
-      cropper.getCroppedCanvas().toBlob(async (blob: Blob | null) => {
-        if (blob) {
-          setIsSharpening(true);
-          console.log("slow sharpening");
-          var file = new File([blob], "image.png", {
-            lastModified: new Date().getTime(),
-            type: blob.type,
-          });
-          const imageBlob = await sharpenSlowImageRequest(file);
-          if (reference.current) {
-            const imageObjectURL = URL.createObjectURL(imageBlob);
-            console.log(imageObjectURL);
-            setIsSharpening(false);
-          }
-        }
-      });
-    }
-  };
 
   const cancelSharpening = () => {
     setIsSharpening(false);
@@ -245,8 +220,8 @@ function FileCropComponent() {
 
   useEffect(() => {
     const subscription = serviceInstance.getRawImage.subscribe(setRawImage);
-    getGeneTypesRequest().then(value => {
-      setGeneTypes(value);
+    getGeneOrganismsRequest().then((value: string[]) => {
+      setGeneOrganisms(value);
     })
     return () => subscription.unsubscribe();
   }, [serviceInstance]);
@@ -268,8 +243,7 @@ function FileCropComponent() {
 
                   {!isSharpening && (
                     <div>
-                      <button onClick={startFastSharpening} disabled={isSharpening} className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">fast sharpening</button>
-                      <button onClick={startSlowSharpening} disabled={isSharpening} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Slow sharpening</button>
+                      <button onClick={startSharpening} disabled={isSharpening} className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">sharpening</button>
                     </div>)
 
                   }
@@ -332,11 +306,11 @@ function FileCropComponent() {
                                   </FormControl>
                                   {imageItem.type === 'gene' && (
                                     <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
-                                      <InputLabel id="select-gene-type">Gene type</InputLabel>
+                                      <InputLabel id="select-gene-type">Gene organism</InputLabel>
                                       <Select value={imageItem?.geneType} onChange={(e) => changeCroppedImageAttribute('geneType', e.target.value, i)}
                                         labelId="select-gene-type" label="Type">
-                                        {geneTypes.map((geneType, geneTypeIndex) => (
-                                          <MenuItem key={`${geneType}-${geneTypeIndex}`} value={geneType}>{geneType}</MenuItem>
+                                        {geneOrganisms.map((geneOrganism, geneOrganismIndex) => (
+                                          <MenuItem key={`${geneOrganism}-${geneOrganismIndex}`} value={geneOrganism}>{geneOrganism}</MenuItem>
                                         ))}
                                       </Select>
                                     </FormControl>
