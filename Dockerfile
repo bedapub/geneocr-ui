@@ -6,8 +6,8 @@ WORKDIR /app
 
 RUN yum install shadow-utils.x86_64 -y
 
-RUN groupadd -g 1001 pmdagroup && \
-    useradd -g pmdagroup -u 1001 pmdauser
+RUN addgroup -g 1001 pmdagroup && \
+    adduser -g pmdagroup -u 1001 pmdauser
 
 USER pmdauser
 
