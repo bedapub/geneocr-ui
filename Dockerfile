@@ -1,5 +1,5 @@
 # stage1 - build react app first 
-FROM node:12.16.1-alpine3.9 as build
+FROM node:13.12.0-alpine as build
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
 COPY ./package.json /app/
