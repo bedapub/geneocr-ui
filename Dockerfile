@@ -4,8 +4,8 @@ FROM node:13.12.0-alpine
 # set working directory
 WORKDIR /app
 
-RUN /usr/sbin/groupadd -g 1001 pmdagroup && \
-    /usr/sbin/useradd -g pmdagroup -u 1001 pmdauser
+RUN groupadd -g 1001 pmdagroup && \
+    useradd -g pmdagroup -u 1001 pmdauser
 
 USER pmdauser
 
