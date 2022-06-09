@@ -4,6 +4,13 @@ FROM node:13.12.0-alpine
 # set working directory
 WORKDIR /app
 
+RUN /usr/sbin/groupadd -g 1001 pmdagroup && \
+    /usr/sbin/useradd -g pmdagroup -u 1001 pmdauser
+
+USER pmdauser
+
+USER root
+
 # add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
 
@@ -18,10 +25,7 @@ COPY . ./
 
 RUN yum-config-manager --enable epel && yum update -y && yum -y install shadow-utils.x86_64 xmlstarlet saxon augeas bsdtar unzip && yum clean all
 
-RUN groupadd -g 1001 pmdagroup && \
-    useradd -g pmdagroup -u 1001 pmdauser
 
-USER pmdauser
 
 EXPOSE 3000
 
