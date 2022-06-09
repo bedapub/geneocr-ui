@@ -13,5 +13,5 @@ FROM nginxinc/nginx-unprivileged:stable-alpine
 COPY --chown=101 --from=build /app/build /usr/share/nginx/html
 RUN rm /etc/nginx/conf.d/default.conf
 COPY --chown=101 nginx/nginx.conf /etc/nginx/conf.d
-EXPOSE 80
+EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]
