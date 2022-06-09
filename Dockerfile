@@ -16,6 +16,8 @@ RUN npm install react-scripts@3.4.1 -g --silent
 # add app
 COPY . ./
 
+RUN yum-config-manager --enable epel && yum update -y && yum -y install shadow-utils.x86_64 xmlstarlet saxon augeas bsdtar unzip && yum clean all
+
 RUN groupadd -g 1001 pmdagroup && \
     useradd -g pmdagroup -u 1001 pmdauser
 
