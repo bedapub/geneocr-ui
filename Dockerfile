@@ -16,6 +16,11 @@ RUN npm install react-scripts@3.4.1 -g --silent
 # add app
 COPY . ./
 
+RUN groupadd -g 1001 pmdagroup && \
+    useradd -g pmdagroup -u 1001 pmdauser
+
+USER pmdauser
+
 EXPOSE 3000
 
 # start app

@@ -19,8 +19,9 @@ import Select from '@mui/material/Select';
 import NothingCropppedYet from "./crop-imagesplitter.png";
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import { Box, LinearProgress } from "@mui/material";
+import { Box, LinearProgress, Tab, Tabs } from "@mui/material";
 import { sharpenFastImageRequest, getGeneOrganismsRequest } from "../helpers/helper";
+import { a11yProps, TabPanel } from "../helpers/tab-panel";
 
 
 
@@ -34,6 +35,7 @@ function FileCropComponent() {
   const [cropperEdit, setCropperEdit] = useState<boolean>(true);
   const [oldBlobs, setOldBlobs] = useState<Blob[]>([]);
   const [geneOrganisms, setGeneOrganisms] = useState<string[]>(['all']);
+  const [tabValue, setTabValue] = React.useState(0);
   const reference = useRef<boolean>();
   reference.current = isSharpening;
 
@@ -44,6 +46,10 @@ function FileCropComponent() {
   const testSetCropper = (cropperValue: Cropper) => {
     setCropper(cropperValue);
   }
+
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
 
   const handleImageCrop = () => {
     if (cropper) {
@@ -273,62 +279,80 @@ function FileCropComponent() {
                 <div>
                   {croppedImages.length !== 0 && (
                     <div>
-                      <TableContainer component={Paper} className="overflow-y-auto" style={{ maxHeight: '500px' }}>
-                        <Table sx={{ width: '100%' }} aria-label="simple table">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Title</TableCell>
-                              <TableCell>Image</TableCell>
-                              <TableCell>Type</TableCell>
-                              <TableCell></TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {croppedImages.map((imageItem, i) => (
-                              <TableRow key={i} sx={{ "&:last-child td, &:last-child th": { border: 0 }, }}
-                                className={i === editingExisting ? 'border border-4 border-solid border-sky-600 rounded-md' : ''} >
-                                <TableCell component="th" scope="row">
-                                  <TextField id="outlined-size-small" value={imageItem.title} size="small"
-                                    onChange={(e) => changeCroppedImageAttribute('title', e.target.value, i)}
-                                    fullWidth style={{ minWidth: 100, }} />
-                                </TableCell>
-                                <TableCell align="right">
-                                  <img src={imageItem.dataUrl} style={{ maxHeight: "200px", maxWidth: "200px" }} />
-                                </TableCell>
-                                <TableCell align="right">
-                                  <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
-                                    <InputLabel id="select-word-type">Type</InputLabel>
-                                    <Select value={imageItem.type} onChange={(e) => changeCroppedImageAttribute('type', e.target.value, i)}
-                                      labelId="select-word-type" label="Type">
-                                      <MenuItem value="gene">Gene</MenuItem>
-                                      <MenuItem value="text">Free text</MenuItem>
-                                    </Select>
-                                  </FormControl>
-                                  {imageItem.type === 'gene' && (
-                                    <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
-                                      <InputLabel id="select-gene-type">Gene organism</InputLabel>
-                                      <Select value={imageItem?.geneType} onChange={(e) => changeCroppedImageAttribute('geneType', e.target.value, i)}
-                                        labelId="select-gene-type" label="Type">
-                                        {geneOrganisms.map((geneOrganism, geneOrganismIndex) => (
-                                          <MenuItem key={`${geneOrganism}-${geneOrganismIndex}`} value={geneOrganism}>{geneOrganism}</MenuItem>
-                                        ))}
-                                      </Select>
-                                    </FormControl>
-                                  )}
-                                </TableCell>
-                                <TableCell align="right">
-                                  <IconButton onClick={() => { handleSetCrop(imageItem, i) }} aria-label="delete" size="large">
-                                    <EditIcon />
-                                  </IconButton>
-                                  <IconButton onClick={() => { deleteCroppedImage(i) }} aria-label="delete" size="large">
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                      <Box sx={{ width: '100%' }}>
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                          <Tabs value={tabValue} onChange={handleChange} aria-label="basic tabs example">
+                            <Tab label="Cropping table" {...a11yProps(0)} />
+                            <Tab label="Image history" {...a11yProps(1)} />
+                          </Tabs>
+                        </Box>
+                        <TabPanel value={tabValue} index={0}>
+                          <TableContainer component={Paper} className="overflow-y-auto" style={{ maxHeight: '500px' }}>
+                            <Table sx={{ width: '100%' }} aria-label="simple table">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>Title</TableCell>
+                                  <TableCell>Image</TableCell>
+                                  <TableCell>Type</TableCell>
+                                  <TableCell></TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {croppedImages.map((imageItem, i) => (
+                                  <TableRow key={i} sx={{ "&:last-child td, &:last-child th": { border: 0 }, }}
+                                    className={i === editingExisting ? 'border border-4 border-solid border-sky-600 rounded-md' : ''} >
+                                    <TableCell component="th" scope="row">
+                                      <TextField id="outlined-size-small" value={imageItem.title} size="small"
+                                        onChange={(e) => changeCroppedImageAttribute('title', e.target.value, i)}
+                                        fullWidth style={{ minWidth: 100, }} />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <img src={imageItem.dataUrl} style={{ maxHeight: "200px", maxWidth: "200px" }} />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
+                                        <InputLabel id="select-word-type">Type</InputLabel>
+                                        <Select value={imageItem.type} onChange={(e) => changeCroppedImageAttribute('type', e.target.value, i)}
+                                          labelId="select-word-type" label="Type">
+                                          <MenuItem value="gene">Gene</MenuItem>
+                                          <MenuItem value="text">Free text</MenuItem>
+                                        </Select>
+                                      </FormControl>
+                                      {imageItem.type === 'gene' && (
+                                        <FormControl sx={{ m: 1, whiteSpace: "nowrap" }} size="small">
+                                          <InputLabel id="select-gene-type">Gene organism</InputLabel>
+                                          <Select value={imageItem?.geneType} onChange={(e) => changeCroppedImageAttribute('geneType', e.target.value, i)}
+                                            labelId="select-gene-type" label="Type">
+                                            {geneOrganisms.map((geneOrganism, geneOrganismIndex) => (
+                                              <MenuItem key={`${geneOrganism}-${geneOrganismIndex}`} value={geneOrganism}>{geneOrganism}</MenuItem>
+                                            ))}
+                                          </Select>
+                                        </FormControl>
+                                      )}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <IconButton onClick={() => { handleSetCrop(imageItem, i) }} aria-label="delete" size="large">
+                                        <EditIcon />
+                                      </IconButton>
+                                      <IconButton onClick={() => { deleteCroppedImage(i) }} aria-label="delete" size="large">
+                                        <DeleteIcon />
+                                      </IconButton>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                        </TabPanel>
+                        <TabPanel value={tabValue} index={1}>
+                          History of image versions
+                        </TabPanel>
+                      </Box>
+
+
+
+
+
                       <div className={-1 === editingExisting && cropperEdit ? 'mt-3 border border-4 border-solid border-sky-600 rounded-md' : ''}>
                         <div className="flex flex-row items-center">
                           <IconButton onClick={createNewCrop} aria-label="delete" size="large">
