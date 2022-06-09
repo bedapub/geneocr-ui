@@ -4,7 +4,7 @@ FROM node:13.12.0-alpine
 # set working directory
 WORKDIR /app
 
-RUN addgroup -g 1001 pmdagroup && \
+RUN addgroup -g 1002 pmdagroup && \
     adduser -g pmdagroup -u 1001 pmdauser
 
 USER pmdauser
