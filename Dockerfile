@@ -4,8 +4,6 @@ FROM node:13.12.0-alpine
 # set working directory
 WORKDIR /app
 
-RUN yum install shadow-utils.x86_64 -y
-
 RUN addgroup -g 1001 pmdagroup && \
     adduser -g pmdagroup -u 1001 pmdauser
 
