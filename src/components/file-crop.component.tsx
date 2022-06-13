@@ -23,6 +23,8 @@ import { Box, LinearProgress, Tab, Tabs } from "@mui/material";
 import { sharpenFastImageRequest, getGeneOrganismsRequest } from "../helpers/helper";
 import { a11yProps, TabPanel } from "../helpers/tab-panel";
 
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 function FileCropComponent() {
@@ -42,10 +44,6 @@ function FileCropComponent() {
   const setRawImage = (image: string) => {
     setRaw(image);
   };
-
-  const testSetCropper = (cropperValue: Cropper) => {
-    setCropper(cropperValue);
-  }
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -241,10 +239,16 @@ function FileCropComponent() {
               <div>
                 <div className="flex flex-row">
                   {cropperEdit && (
-                    <button className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800" disabled>Edit is enabled</button>
+                    <div className="border rounded-lg border-lime-600 flex flex-row items-center mb-2 px-2.5 mr-2 border-2">
+                      <CheckIcon className="text-lime-600" />
+                      Edit is enabled
+                    </div>
                   )}
                   {!cropperEdit && (
-                    <button className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900" disabled>Edit is disabled</button>
+                    <div className="border rounded-lg border-red-600 flex flex-row items-center mb-2 px-2.5 mr-2 border-2">
+                      <CloseIcon className="text-red-600" />
+                      Edit is disabled
+                    </div>
                   )}
 
                   {!isSharpening && (
@@ -269,7 +273,7 @@ function FileCropComponent() {
                   <Cropper style={{ width: "100%", height: "auto", maxHeight: "100%", maxWidth: "100%" }} zoomTo={0.5} initialAspectRatio={1}
                     src={raw} viewMode={1} minCropBoxHeight={10} minCropBoxWidth={10}
                     background={false} responsive={true} autoCropArea={1} checkOrientation={false}
-                    onInitialized={(instance) => testSetCropper(instance)} guides={true} />
+                    onInitialized={(instance) => setCropper(instance)} guides={true} />
                 )}
                 <div className="mt-3 flex flex-row-reverse">
                   <button onClick={handleImageCrop} className="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Crop image</button>
